@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,10 +24,12 @@ namespace GestorDeClientes
 
         static void Main(string[] args)
         {
+            Carregar();
+
             bool escolheuSair = false;
             while(!escolheuSair)
             {
-                Console.WriteLine("### SISTEMA DE CLIENTES - BEM VINDO!");
+                Console.WriteLine("### SISTEMA DE CLIENTES - BEM VINDO! ###");
                 Console.WriteLine("1 - Listagem\n2 - Adicionar\n3 - Remover\n4 - Sair");
                 int intOp = int.Parse(Console.ReadLine());
                 Menu opcao = (Menu)intOp;
@@ -33,12 +37,13 @@ namespace GestorDeClientes
                 switch (opcao)
                 {
                     case Menu.Listagem:
-                        Listagem();
+                        Listagem(false);
                         break;
                     case Menu.Adicionar:
                         Adicionar();
                         break;
                     case Menu.Remover:
+                        Remover();
                         break;
                     case Menu.Sair:
                         escolheuSair = true;
@@ -49,8 +54,9 @@ namespace GestorDeClientes
             }            
         }
 
-        static void Listagem ()
+        static void Listagem (bool remover)
         {
+            Console.Clear();
             if (clientes.Count > 0)
             {
                 int i = 0;
@@ -59,7 +65,7 @@ namespace GestorDeClientes
                 Console.WriteLine("#");
                 foreach (Cliente cliente in clientes)
                 {
-                    Console.WriteLine("---");
+                    Console.WriteLine("-----------------------------------------");
                     Console.WriteLine($"ID:     {i}");
                     Console.WriteLine($"Nome:   {cliente.nome}");
                     Console.WriteLine($"E-mail: {cliente.email}");
@@ -73,9 +79,12 @@ namespace GestorDeClientes
                 Console.WriteLine("Nenhum cliente cadastrado.");
             }
 
-            Console.WriteLine("#");
-            Console.WriteLine("Aperte ENTER para sair.");
-            Console.ReadLine();
+            if (!remover)
+            {
+                Console.WriteLine("#");
+                Console.WriteLine("Aperte ENTER para retornar.");
+                Console.ReadLine();
+            }            
         }
         static void Adicionar()
         {
@@ -91,10 +100,69 @@ namespace GestorDeClientes
             cliente.cpf = Console.ReadLine();
 
             clientes.Add(cliente);
+            Salvar();
 
             Console.WriteLine("#");
-            Console.Write("Cadastro concluído, aperte ENTER para sair.");
+            Console.Write("Cadastro concluído, aperte ENTER para retornar.");
             Console.ReadLine();
+        }
+
+        static void Salvar()
+        {
+            FileStream stream = new FileStream("clients.dat", FileMode.OpenOrCreate);
+            BinaryFormatter encoder = new BinaryFormatter();
+
+            encoder.Serialize(stream, clientes);
+
+            stream.Close();
+        }
+
+        static void Carregar()
+        {
+            FileStream stream = new FileStream("clients.dat", FileMode.OpenOrCreate);
+
+            try
+            {                
+                BinaryFormatter encoder = new BinaryFormatter();
+
+                clientes = (List<Cliente>)encoder.Deserialize(stream);
+
+                if(clientes == null)
+                {
+                    clientes = new List<Cliente>();
+                }                
+            }
+            catch(Exception e)
+            {
+                clientes = new List<Cliente>();
+            }
+
+            stream.Close();
+        }
+
+        static bool Remover()
+        {
+            Console.Clear();
+            Console.WriteLine("Remover cliente.");
+            Console.WriteLine("#");
+            bool inRemover = true;
+            Listagem(inRemover);
+            Console.WriteLine("-----------------------------------------");
+            Console.Write("Digite o ID do cliente que você quer remover: ");
+            int id = int.Parse(Console.ReadLine());
+
+            if(id >= 0 && id < clientes.Count)
+            {
+                clientes.RemoveAt(id);
+                Salvar();
+            }
+            else
+            {
+                Console.WriteLine("#");
+                Console.WriteLine("ID digitado é inválido, tente novamente!");
+                Console.ReadLine();
+            }
+            return inRemover;
         }
     }
 }
